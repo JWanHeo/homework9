@@ -16,17 +16,15 @@ typedef struct {
 Graph *create();
 void insertVertex(Graph *graph, int v);
 void insertEdge(Graph *graph, int v1, int v2);
-void DeleteVertex(Graph *graph, int v);
-void DeleteEdge(Graph *graph, int v1, int v2);
 int isEmpty(Graph *graph);
 void printGraph(Graph *graph);
 
 
 int main() {
 
-  Graph* graph = create();
+  Graph* graph;
   char command;
-  int src, dest;
+  int from, to;
 
   do{
 		printf("\n\n");
@@ -90,82 +88,36 @@ Graph *create() {
 }
 
 void insertVertex(Graph *graph, int v) {
-  if (graph->num >= MAX_VERTEX) {
-    printf("Graph is full.\n");
+  if ((graph->num) + 1 > MAX_VERTEX) {
+    printf("최대 vertex 수 초과\n");
     return;
   }
   graph->num++;
 }
 
 void insertEdge(Graph *graph, int v1, int v2) {
+  if (v1 >= graph->num || v2 >= graph->num) {
+    printf("해당 vertex가 존재하지 않습니다.\n");
+    return;
+  }
   Node *node = (Node *)malloc(sizeof(Node));
   node->vertex = v2;
   node->next = graph->adj_list[v1];
   graph->adj_list[v1] = node;
-
-  node = (Node *)malloc(sizeof(Node));
-  node->vertex = v1;
-  node->next = graph->adj_list[v2];
-  graph->adj_list[v2] = node;
 }
 
-void DeleteVertex(Graph *graph, int v) {
-  Node *node = graph->adj_list[v];
-  Node *temp;
-  while (node != NULL) {
-    temp = node;
-    node = node->next;
-    free(temp);
-  }
-  graph->adj_list[v] = NULL;
-}
-
-void DeleteEdge(Graph *graph, int v1, int v2) {
-  Node *node = graph->adj_list[v1];
-  Node *prev = NULL;
-  while (node != NULL) {
-    if (node->vertex == v2) {
-      if (prev == NULL) {
-        graph->adj_list[v1] = node->next;
-      } else {
-        prev->next = node->next;
-      }
-      free(node);
-      break;
+void printGraph(Graph *graph) {
+  for (int i = 0; i < graph->num; i++) {
+    Node *node = graph->adj_list[i];
+    printf("vertex %d의 인접리스트: ", i);
+    while (node != NULL) {
+      printf("%d -> ", node->vertex);
+      node = node->next;
     }
-    prev = node;
-    node = node->next;
-  }
-
-  node = graph->adj_list[v2];
-  prev = NULL;
-  while (node != NULL) {
-    if (node->vertex == v1) {
-      if (prev == NULL) {
-        graph->adj_list[v2] = node->next;
-      } else {
-        prev->next = node->next;
-      }
-      free(node);
-      break;
-    }
-    prev = node;
-    node = node->next;
+    printf("\n");
   }
 }
 
 int isEmpty(Graph *graph) {
   return graph->num == 0;
-}
-
-void printGraph(Graph *graph) {
-  for (int i = 0; i < MAX_VERTEX; i++) {
-    Node *node = graph->adj_list[i];
-    printf("Vertex %d: ", i);
-    while (node != NULL) {
-      printf("%d ", node->vertex);
-      node = node->next;
-    }
-    printf("\n");
-  }
 }
