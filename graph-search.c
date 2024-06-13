@@ -13,6 +13,13 @@ typedef struct {
   Node *adjList[MAX_VERTEX];
 } Graph;
 
+typedef struct {
+  int vertices[MAX_VERTEX];
+  int front;
+  int rear;
+} Queue;
+
+
 int visited[MAX_VERTEX];
 
 Graph *create();
@@ -23,6 +30,9 @@ void printGraph(Graph *graph);
 void dfs(Graph *graph, int v);
 void bfs(Graph *graph, int v);  
 void resetVisited(Graph *graph);
+Queue* createQueue();
+void enqueue(Queue* q, int value);
+int dequeue(Queue* q);
 
 int main() {
 
@@ -168,7 +178,7 @@ void dfs(Graph *graph, int v) {
   Node* temp = adjList;
 
   visited[v] = 1; // 방문한 vertex 표시
-  printf("%d ", v);
+  printf("%d -> ", v);
 
   while (temp != NULL) { // 인접 vertex 탐색
     int connectedV = temp->vertex;
@@ -182,25 +192,25 @@ void dfs(Graph *graph, int v) {
 
 /*너비 우선 탐색*/
 void bfs(Graph *graph, int v) {
-  int queue[MAX_VERTEX]; 
-  int front = 0;
-  int rear = -1;
+  int visited[MAX_VERTEX] = {0};
 
-  visited[v] = 1; // 방문한 vertex 표시
-  queue[++rear] = v; // queue에 삽입
+  Queue* q = createQueue();
 
-  while (front <= rear) { // queue가 비어있지 않은 경우
-    int currentVertex = queue[front++]; // queue에서 vertex 추출
-    printf("%d -> ", currentVertex);
+  visited[v] = 1;
+  enqueue(q, v);
 
-    Node* temp = graph->adjList[v];
+  while (!(q->rear == -1)) {
+    int currentV = dequeue(q);
+    printf("%d -> ", currentV);
 
-    while (temp) { // 인접 vertex 탐색
-      int adjVertex = temp->vertex;
+    Node* temp = graph->adjList[currentV];
 
-      if (visited[adjVertex] == 0) { // 방문하지 않은 vertex인 경우
-        visited[adjVertex] = 1; // 방문한 vertex 표시
-        queue[++rear] = adjVertex; // queue에 삽입
+    while (temp) {
+      int adjV = temp->vertex;
+
+      if (visited[adjV] == 0) {
+        visited[adjV] = 1;
+        enqueue(q, adjV);
       }
       temp = temp->next;
     }
@@ -212,4 +222,38 @@ void resetVisited(Graph *graph) {
   for (int i = 0; i < graph->num; i++) {
     visited[i] = 0;
   }
+}
+
+Queue* createQueue() {
+  Queue* q = (Queue*)malloc(sizeof(Queue));
+  q->front = -1;
+  q->rear = -1;
+  return q;
+}
+
+void enqueue(Queue* q, int value) {
+  if (q->rear == MAX_VERTEX - 1) {
+    printf("\nQueue is Full!!");
+  } else {
+    if (q->front == -1) q->front = 0;
+    q->rear++;
+    q->vertices[q->rear] = value;
+  }
+}
+
+int dequeue(Queue* q) {
+  int item;
+
+  if (q->rear == -1) {
+    printf("Queue가 비어있습니다.\n");
+    item = -1;
+  } else {
+    item = q->vertices[q->front];
+    q->front++;
+
+    if (q->front > q->rear) {
+      q->front = q->rear = -1;
+    }
+  }
+  return item;
 }
