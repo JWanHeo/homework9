@@ -10,15 +10,19 @@ typedef struct node {
 
 typedef struct {
   int num;
-  Node *adj_list[MAX_VERTEX];
+  Node *adjList[MAX_VERTEX];
 } Graph;
 
+int visited[MAX_VERTEX];
+
 Graph *create();
-void insertVertex(Graph *graph, int v);
+void insertVertex(Graph *graph);
 void insertEdge(Graph *graph, int v1, int v2);
 int isEmpty(Graph *graph);
 void printGraph(Graph *graph);
-
+void dfs(Graph *graph, int v);
+void bfs(Graph *graph, int v);  
+void resetVisited(Graph *graph);
 
 int main() {
 
@@ -48,25 +52,29 @@ int main() {
 			free(graph);
 			break;
 		case 'v': case 'V':
-      printf("Your Vertex = ");
-      scanf("%d", &src);
-      insertVertex(graph, src);
+      insertVertex(graph);
 			break;
 		case 'd': case 'D':
-			
+      printf("from: ");
+      scanf("%d", &from);
+			dfs(graph, from);
+      resetVisited(graph);
 			break;
 		case 'p': case 'P':
 			printGraph(graph);
 			break;
 		case 'e': case 'E':
-      printf("Your Source Vertex = ");
-      scanf("%d", &src);
-      printf("Your Destination Vertex = ");
-      scanf("%d", &dest);
-      insertEdge(graph, src, dest);
+      printf("from = ");
+      scanf("%d", &from);
+      printf("to = ");
+      scanf("%d", &to);
+      insertEdge(graph, from, to);
 			break;
 		case 'b': case 'B':
-			
+      printf("from: ");
+      scanf("%d", &from);
+			bfs(graph, from);
+      resetVisited(graph);
 			break;
 		default:
 			printf("\n       >>>>>   Concentration!!   <<<<<     \n");
@@ -78,38 +86,69 @@ int main() {
   return 0;
 }
 
+ /* »õ·Î¿î ±×·¡ÇÁ »ý¼º */
 Graph *create() {
   Graph *graph = (Graph *)malloc(sizeof(Graph));
   graph->num = 0;
+
   for (int i = 0; i < MAX_VERTEX; i++) {
-    graph->adj_list[i] = NULL;
+    graph->adjList[i] = NULL;
   }
   return graph;
 }
 
-void insertVertex(Graph *graph, int v) {
+ /* »õ·Î¿î vertex »ðÀÔ*/
+void insertVertex(Graph *graph) {
   if ((graph->num) + 1 > MAX_VERTEX) {
-    printf("ìµœëŒ€ vertex ìˆ˜ ì´ˆê³¼\n");
+    printf("ÃÖ´ë vertex ¼ö ÃÊ°ú\n");
     return;
   }
   graph->num++;
 }
 
-void insertEdge(Graph *graph, int v1, int v2) {
-  if (v1 >= graph->num || v2 >= graph->num) {
-    printf("í•´ë‹¹ vertexê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.\n");
+ /* vertex°£ »õ·Î¿î edge »ðÀÔ*/
+void insertEdge(Graph *graph, int from, int to) {
+  if (from >= graph->num || to >= graph->num) { // vertex°¡ Á¸ÀçÇÏÁö ¾Ê´Â °æ¿ì
+    printf("ÇØ´ç vertex°¡ Á¸ÀçÇÏÁö ¾Ê½À´Ï´Ù.\n");
     return;
   }
+
+  Node* temp = graph->adjList[from];
+  Node* prev = NULL;
+
+  while (temp && temp->vertex < to) { // ÀÎÁ¢¸®½ºÆ®¸¦ ¼øÈ¸ÇÏ¸ç Á¤·ÄµÈ À§Ä¡ Ã£±â
+    prev = temp;
+    temp = temp->next;
+  }
+
+  while (temp) { // ÀÌ¹Ì edge°¡ Á¸ÀçÇÏ´Â °æ¿ì È®ÀÎ
+    if (temp->vertex == to) {
+      printf("ÀÌ¹Ì Á¸ÀçÇÏ´Â edgeÀÔ´Ï´Ù.\n");
+      return;
+    }
+    temp = temp->next;
+  }
+
   Node *node = (Node *)malloc(sizeof(Node));
-  node->vertex = v2;
-  node->next = graph->adj_list[v1];
-  graph->adj_list[v1] = node;
+  node->vertex = to;
+
+  // »õ·Î¿î ³ëµå¸¦ Á¤·ÄµÈ À§Ä¡¿¡ »ðÀÔ
+  if (prev == NULL) { // Ã¹ ³ëµåÀÎ °æ¿ì
+    node->next = graph->adjList[from];
+    graph->adjList[from] = node;
+  } else { // ¾Æ´Ñ °æ¿ì
+    node->next = prev->next;
+    prev->next = node;
+  }
 }
 
+/*±×·¡ÇÁ Ãâ·Â*/
 void printGraph(Graph *graph) {
   for (int i = 0; i < graph->num; i++) {
-    Node *node = graph->adj_list[i];
-    printf("vertex %dì˜ ì¸ì ‘ë¦¬ìŠ¤íŠ¸: ", i);
+    Node *node = graph->adjList[i];
+
+    printf("vertex %dÀÇ ÀÎÁ¢¸®½ºÆ®: ", i);
+
     while (node != NULL) {
       printf("%d -> ", node->vertex);
       node = node->next;
@@ -118,6 +157,59 @@ void printGraph(Graph *graph) {
   }
 }
 
+/*±×·¡ÇÁ°¡ ºñ¾îÀÖ´ÂÁö È®ÀÎ*/
 int isEmpty(Graph *graph) {
   return graph->num == 0;
+}
+
+/*±íÀÌ ¿ì¼± Å½»ö*/
+void dfs(Graph *graph, int v) {
+  Node* adjList = graph->adjList[v];
+  Node* temp = adjList;
+
+  visited[v] = 1; // ¹æ¹®ÇÑ vertex Ç¥½Ã
+  printf("%d ", v);
+
+  while (temp != NULL) { // ÀÎÁ¢ vertex Å½»ö
+    int connectedV = temp->vertex;
+
+    if (visited[connectedV] == 0) { // ¹æ¹®ÇÏÁö ¾ÊÀº vertexÀÎ °æ¿ì
+      dfs(graph, connectedV);  // recursive Å½»ö
+    }
+    temp = temp->next;
+  }
+}
+
+/*³Êºñ ¿ì¼± Å½»ö*/
+void bfs(Graph *graph, int v) {
+  int queue[MAX_VERTEX]; 
+  int front = 0;
+  int rear = -1;
+
+  visited[v] = 1; // ¹æ¹®ÇÑ vertex Ç¥½Ã
+  queue[++rear] = v; // queue¿¡ »ðÀÔ
+
+  while (front <= rear) { // queue°¡ ºñ¾îÀÖÁö ¾ÊÀº °æ¿ì
+    int currentVertex = queue[front++]; // queue¿¡¼­ vertex ÃßÃâ
+    printf("%d -> ", currentVertex);
+
+    Node* temp = graph->adjList[v];
+
+    while (temp) { // ÀÎÁ¢ vertex Å½»ö
+      int adjVertex = temp->vertex;
+
+      if (visited[adjVertex] == 0) { // ¹æ¹®ÇÏÁö ¾ÊÀº vertexÀÎ °æ¿ì
+        visited[adjVertex] = 1; // ¹æ¹®ÇÑ vertex Ç¥½Ã
+        queue[++rear] = adjVertex; // queue¿¡ »ðÀÔ
+      }
+      temp = temp->next;
+    }
+  }
+}
+
+/*¹æ¹®ÇÑ vertex ÃÊ±âÈ­*/
+void resetVisited(Graph *graph) {
+  for (int i = 0; i < graph->num; i++) {
+    visited[i] = 0;
+  }
 }
